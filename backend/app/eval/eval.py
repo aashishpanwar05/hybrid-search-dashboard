@@ -1,6 +1,7 @@
 import json
 import pickle
 import csv
+import subprocess
 from datetime import datetime
 from pathlib import Path
 
@@ -9,6 +10,22 @@ from ranx import Qrels, Run, evaluate
 from sentence_transformers import SentenceTransformer
 
 from backend.app.search.hybrid import hybrid_ranking
+
+def get_git_commit():
+    """
+    Get the current git commit hash.
+
+    Returns:
+        str: Current git commit hash, or 'unknown' if not in a git repo
+    """
+    try:
+        result = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True, text=True, cwd=Path(__file__).parent.parent.parent.parent)
+        if result.returncode == 0:
+            return result.stdout.strip()
+        else:
+            return 'unknown'
+    except Exception:
+        return 'unknown'
 
 def load_queries(queries_path):
     """
@@ -112,19 +129,27 @@ def evaluate_hybrid_search(queries_path, qrels_path, bm25_index_path, vector_ind
     # Evaluate
     results = evaluate(qrels, run, ["ndcg@10", "recall@10", "mrr@10"])
 
+    # Get current timestamp and git commit
+    timestamp = datetime.now().isoformat()
+    git_commit = get_git_commit()
+
     # Prepare CSV row
     experiment_name = f"hybrid_alpha_{alpha}_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
     row = {
-        'experiment': experiment_name,
-        'ndcg@10': results['ndcg@10'],
-        'recall@10': results['recall@10'],
-        'mrr@10': results['mrr@10']
+        'timestamp': timestamp,
+        'git_commit': git_commit,
+        'experiment_name': experiment_name,
+        'alpha': alpha,
+        'ndcg_at_10': results['ndcg@10'],
+        'recall_at_10': results['recall@10'],
+        'mrr_at_10': results['mrr@10'],
+        'query_count': len(queries)
     }
 
     # Append to CSV
     file_exists = Path(output_csv).exists()
     with open(output_csv, 'a', newline='', encoding='utf-8') as f:
-        writer = csv.DictWriter(f, fieldnames=['experiment', 'ndcg@10', 'recall@10', 'mrr@10'])
+        writer = csv.DictWriter(f, fieldnames=['timestamp', 'git_commit', 'experiment_name', 'alpha', 'ndcg_at_10', 'recall_at_10', 'mrr_at_10', 'query_count'])
         if not file_exists:
             writer.writeheader()
         writer.writerow(row)

@@ -21,6 +21,12 @@ export PYTHONPATH=$PYTHONPATH:$(pwd)
 echo "Installing requirements..."
 pip install -r requirements.txt
 
+# Generate sample corpus if raw data is missing
+if [ ! -d "data/raw" ] || [ $(ls data/raw/ | wc -l) -lt 300 ]; then
+    echo "Generating sample corpus..."
+    python generate_corpus.py
+fi
+
 # Run ingestion if processed data is missing
 if [ ! -f "data/processed/ingested.jsonl" ]; then
     echo "Running data ingestion..."

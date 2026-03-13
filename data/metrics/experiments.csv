@@ -1,0 +1,6 @@
+timestamp,git_commit,experiment_name,alpha,ndcg_at_10,recall_at_10,mrr_at_10,query_count
+2024-01-15T10:00:00Z,abc123def,hybrid_search_alpha_0.5,0.5,0.85,0.78,0.82,50
+2024-01-15T11:00:00Z,def456ghi,hybrid_search_alpha_0.7,0.7,0.87,0.80,0.85,50
+2024-01-15T12:00:00Z,ghi789jkl,bm25_only,0.0,0.75,0.68,0.72,50
+2024-01-15T13:00:00Z,jkl012mno,vector_only,1.0,0.82,0.75,0.78,50
+2024-01-15T14:00:00Z,mno345pqr,hybrid_search_alpha_0.3,0.3,0.83,0.76,0.80,50

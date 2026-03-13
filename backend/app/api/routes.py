@@ -83,9 +83,13 @@ def get_experiments():
         reader = csv.DictReader(f)
         for row in reader:
             experiments.append({
-                'experiment': row['experiment'],
-                'ndcg@10': float(row.get('ndcg@10', 0)),
-                'recall@10': float(row.get('recall@10', 0)),
-                'mrr@10': float(row.get('mrr@10', 0))
+                'timestamp': row['timestamp'],
+                'git_commit': row['git_commit'],
+                'experiment_name': row['experiment_name'],
+                'alpha': float(row['alpha']),
+                'ndcg_at_10': float(row['ndcg_at_10']),
+                'recall_at_10': float(row['recall_at_10']),
+                'mrr_at_10': float(row['mrr_at_10']),
+                'query_count': int(row['query_count'])
             })
     return experiments
