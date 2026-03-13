@@ -1,71 +1,40 @@
-import json
-import pickle
 import os
 from pathlib import Path
 
-from backend.app.search.bm25 import BM25Index
-from backend.app.search.vector import VectorIndex
+from backend.app.search.bm25 import BM25Search
+from backend.app.search.vector import VectorSearch
 
-def load_documents(jsonl_path):
+def build_indices():
     """
-    Load documents from JSONL file.
-
-    Args:
-        jsonl_path: Path to the JSONL file
-
-    Returns:
-        List of document dictionaries
+    Build and validate BM25 and vector indices.
+    The new search classes handle loading and indexing internally.
     """
-    documents = []
-    with open(jsonl_path, 'r', encoding='utf-8') as f:
-        for line in f:
-            if line.strip():
-                documents.append(json.loads(line))
-    return documents
+    print("Validating data availability...")
 
-def build_indices(jsonl_path, bm25_dir, vector_dir):
-    """
-    Build and save BM25 and vector indices.
+    # Check if processed data exists
+    data_path = Path("data/processed/ingested.jsonl")
+    if not data_path.exists():
+        raise FileNotFoundError(f"Processed data not found at {data_path}. Run ingestion first.")
 
-    Args:
-        jsonl_path: Path to processed JSONL documents
-        bm25_dir: Directory to save BM25 index
-        vector_dir: Directory to save vector index
-    """
-    # Load documents
-    documents = load_documents(jsonl_path)
-    print(f"Loaded {len(documents)} documents")
+    print(f"Data file found: {data_path}")
 
-    # Build BM25 index
-    print("Building BM25 index...")
-    bm25_index = BM25Index()
-    bm25_index.build(documents)
+    # Validate BM25 search can be initialized
+    print("Validating BM25 search...")
+    try:
+        bm25_search = BM25Search()
+        print("BM25 search initialized successfully")
+    except Exception as e:
+        raise RuntimeError(f"Failed to initialize BM25 search: {e}")
 
-    # Save BM25 index
-    Path(bm25_dir).mkdir(parents=True, exist_ok=True)
-    bm25_path = Path(bm25_dir) / 'index.pkl'
-    with open(bm25_path, 'wb') as f:
-        pickle.dump(bm25_index, f)
-    print(f"BM25 index saved to {bm25_path}")
+    # Validate vector search can be initialized
+    print("Validating vector search...")
+    try:
+        vector_search = VectorSearch()
+        print("Vector search initialized successfully")
+    except Exception as e:
+        raise RuntimeError(f"Failed to initialize vector search: {e}")
 
-    # Build vector index
-    print("Building vector index...")
-    vector_index = VectorIndex()
-    vector_index.build(documents)
-
-    # Save vector index
-    Path(vector_dir).mkdir(parents=True, exist_ok=True)
-    vector_path = Path(vector_dir) / 'index.pkl'
-    with open(vector_path, 'wb') as f:
-        pickle.dump(vector_index, f)
-    print(f"Vector index saved to {vector_path}")
-
-    print("Index building complete!")
+    print("All indices validated successfully!")
 
 if __name__ == "__main__":
-    # Default paths
-    jsonl_path = 'data/processed/ingested.jsonl'
-    bm25_dir = 'data/index/bm25'
-    vector_dir = 'data/index/vector'
-
-    build_indices(jsonl_path, bm25_dir, vector_dir)
+    build_indices()

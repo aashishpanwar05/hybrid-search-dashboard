@@ -8,17 +8,21 @@ function SearchPage() {
   const [results, setResults] = useState([]);
 
   const runSearch = async () => {
+    try {
+      const response = await axios.post(
+        "http://localhost:8001/search",
+        {
+          query: query,
+          top_k: 5,
+          alpha: 0.5
+        }
+      );
 
-    const response = await axios.post(
-      "http://localhost:8000/search",
-      {
-        query: query,
-        top_k: 5,
-        alpha: 0.5
-      }
-    );
-
-    setResults(response.data);
+      setResults(response.data);
+    } catch (error) {
+      console.error('Search error:', error);
+      alert('Search failed. Please check if the backend is running.');
+    }
   };
 
   return (

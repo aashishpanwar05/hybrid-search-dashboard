@@ -15,7 +15,7 @@ function KpiPage() {
   const fetchKPIData = async () => {
     try {
       // Fetch logs for volume and latency
-      const logsResponse = await axios.get('http://localhost:8000/logs?limit=1000');
+      const logsResponse = await axios.get('http://localhost:8001/logs?limit=1000');
       const logs = logsResponse.data;
 
       // Process volume data (requests per day)
@@ -55,7 +55,7 @@ function KpiPage() {
       setTopQueriesData(topQueries);
 
       // Fetch experiments
-      const experimentsResponse = await axios.get('http://localhost:8000/experiments');
+      const experimentsResponse = await axios.get('http://localhost:8001/experiments');
       setExperimentsData(experimentsResponse.data);
 
     } catch (error) {

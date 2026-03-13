@@ -1,33 +1,15 @@
 import time
-import pickle
 from typing import List
 
-from app.search.bm25 import BM25Index
-from app.search.vector import VectorIndex
-from app.search.hybrid import hybrid_ranking
-from app.api.metrics import record_request
-from app.logging_db import log_query
+from backend.app.search.bm25 import BM25Search
+from backend.app.search.vector import VectorSearch
+from backend.app.api.metrics import record_request
+from backend.app.logging_db import log_query
 
 class HybridSearch:
     def __init__(self):
-        self.bm25_index = None
-        self.vector_index = None
-        self.doc_ids = None
-        self._load_indexes()
-
-    def _load_indexes(self):
-        """Load BM25 and vector indexes from disk."""
-        try:
-            with open('data/index/bm25/index.pkl', 'rb') as f:
-                self.bm25_index = pickle.load(f)
-            with open('data/index/vector/index.pkl', 'rb') as f:
-                self.vector_index = pickle.load(f)
-            self.doc_ids = self.vector_index.doc_ids
-            print("Indexes loaded successfully")
-        except FileNotFoundError:
-            print("Warning: Indexes not found. Run indexing first.")
-        except Exception as e:
-            print(f"Error loading indexes: {e}")
+        self.bm25_search = BM25Search()
+        self.vector_search = VectorSearch()
 
     def search(self, query: str, top_k: int = 10, alpha: float = 0.5) -> List[dict]:
         """
@@ -41,45 +23,82 @@ class HybridSearch:
         Returns:
             List of search results with scores
         """
-        if not self.bm25_index or not self.vector_index:
-            return []
-
         start_time = time.time()
 
-        # Get BM25 scores for all documents
-        bm25_tokenized = query.split()
-        bm25_scores = self.bm25_index.bm25.get_scores(bm25_tokenized)
+        # Get BM25 results
+        bm25_results = self.bm25_search.search(query, top_k=top_k)
+        
+        # Get vector results  
+        vector_results = self.vector_search.search(query, top_k=top_k)
 
-        # Get vector scores for all documents
-        query_embedding = self.vector_index.model.encode([query])[0]
-        from sklearn.metrics.pairwise import cosine_similarity
-        vector_scores = cosine_similarity([query_embedding], self.vector_index.embeddings)[0]
+        # Create score dictionaries for hybrid ranking
+        bm25_scores = {}
+        vector_scores = {}
+        
+        # Collect all unique doc_ids
+        all_doc_ids = set()
+        for result in bm25_results + vector_results:
+            all_doc_ids.add(result['doc_id'])
+        
+        # Initialize scores for all docs
+        for doc_id in all_doc_ids:
+            bm25_scores[doc_id] = 0.0
+            vector_scores[doc_id] = 0.0
+        
+        # Fill in actual scores
+        for result in bm25_results:
+            bm25_scores[result['doc_id']] = result['score']
+        for result in vector_results:
+            vector_scores[result['doc_id']] = result['score']
 
-        # Hybrid ranking
-        ranked_results = hybrid_ranking(self.doc_ids, bm25_scores, vector_scores, alpha)
+        # Min-max normalization and hybrid ranking
+        doc_ids = list(all_doc_ids)
+        bm25_score_list = [bm25_scores[doc_id] for doc_id in doc_ids]
+        vector_score_list = [vector_scores[doc_id] for doc_id in doc_ids]
+        
+        # Min-max normalize scores
+        if bm25_score_list:
+            bm25_min, bm25_max = min(bm25_score_list), max(bm25_score_list)
+            bm25_range = bm25_max - bm25_min if bm25_max != bm25_min else 1
+            bm25_normalized = [(s - bm25_min) / bm25_range for s in bm25_score_list]
+        else:
+            bm25_normalized = bm25_score_list
+            
+        if vector_score_list:
+            vector_min, vector_max = min(vector_score_list), max(vector_score_list)
+            vector_range = vector_max - vector_min if vector_max != vector_min else 1
+            vector_normalized = [(s - vector_min) / vector_range for s in vector_score_list]
+        else:
+            vector_normalized = vector_score_list
 
-        # Take top_k
-        top_results = ranked_results[:top_k]
-
-        # Record metrics
-        latency_ms = (time.time() - start_time) * 1000
-        record_request(latency_ms)
-        log_query(query, latency_ms, len(top_results))
+        # Calculate hybrid scores and rank
+        hybrid_results = []
+        for i, doc_id in enumerate(doc_ids):
+            hybrid_score = alpha * bm25_normalized[i] + (1 - alpha) * vector_normalized[i]
+            hybrid_results.append((doc_id, hybrid_score))
+        
+        # Sort by hybrid score descending
+        hybrid_results.sort(key=lambda x: x[1], reverse=True)
+        top_results = hybrid_results[:top_k]
 
         # Format results
         results = []
         for doc_id, hybrid_score in top_results:
-            # Find original BM25 and vector scores for this doc
-            idx = self.doc_ids.index(doc_id)
-            bm25_score = float(bm25_scores[idx])
-            vector_score = float(vector_scores[idx])
+            # Find the doc details from BM25 results (assuming all docs are there)
+            doc_details = next((r for r in bm25_results if r['doc_id'] == doc_id), 
+                             next((r for r in vector_results if r['doc_id'] == doc_id), None))
+            if doc_details:
+                results.append({
+                    'doc_id': doc_id,
+                    'title': doc_details['title'],
+                    'bm25_score': bm25_scores[doc_id],
+                    'vector_score': vector_scores[doc_id],
+                    'hybrid_score': hybrid_score
+                })
 
-            results.append({
-                'doc_id': doc_id,
-                'title': doc_id.replace('_', '/').replace('.txt', '').replace('.md', ''),  # Simple title
-                'bm25_score': bm25_score,
-                'vector_score': vector_score,
-                'hybrid_score': hybrid_score
-            })
+        # Record metrics
+        latency_ms = (time.time() - start_time) * 1000
+        record_request(latency_ms)
+        log_query(query, latency_ms, len(results))
 
         return results

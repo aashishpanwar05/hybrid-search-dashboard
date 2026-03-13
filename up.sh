@@ -24,17 +24,16 @@ pip install -r requirements.txt
 # Run ingestion if processed data is missing
 if [ ! -f "data/processed/ingested.jsonl" ]; then
     echo "Running data ingestion..."
-    python -m backend.app.ingest.ingest --input_dir data/raw --output_dir data/processed
+    python -m backend.app.ingest.ingest --input data/raw --out data/processed
 fi
 
-# Run indexing if indexes are missing
-if [ ! -f "data/index/bm25/index.pkl" ] || [ ! -f "data/index/vector/index.pkl" ]; then
-    echo "Running index building..."
+# Run indexing if processed data exists (validate search classes can initialize)
+if [ -f "data/processed/ingested.jsonl" ]; then
+    echo "Running index validation..."
     python -m backend.app.index.index
 fi
 
 # Start FastAPI server
 echo "Starting FastAPI server..."
 echo "Press Ctrl+C to stop the server"
-
-uvicorn backend.app.main:app --host 0.0.0.0 --port 8000 --reload
+uvicorn backend.app.main:app --host 0.0.0.0 --port 8001 --reload

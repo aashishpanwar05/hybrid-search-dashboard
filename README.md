@@ -52,7 +52,7 @@ This will:
 - Install dependencies
 - Generate sample data (300 documents)
 - Build indexes
-- Start backend API (http://localhost:8000)
+- Start backend API (http://localhost:8001)
 - Start frontend dashboard (http://localhost:5173)
 
 ### Manual Steps (if needed)

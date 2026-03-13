@@ -5,8 +5,8 @@ import sqlite3
 import csv
 import os
 
-from app.search_service import HybridSearch
-from app.api.metrics import get_metrics
+from backend.app.search_service import HybridSearch
+from backend.app.api.metrics import get_metrics
 
 router = APIRouter()
 

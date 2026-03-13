@@ -1,4 +1,4 @@
-from rank_bm25 import BM25Okapi
+from rank_bm25 import BM25L
 import json
 
 
@@ -10,13 +10,14 @@ class BM25Search:
             docs = [json.loads(line) for line in f]
 
         self.docs = docs
-        self.corpus = [doc["text"].split() for doc in docs]
+        # Convert to lowercase for case-insensitive matching
+        self.corpus = [doc["text"].lower().split() for doc in docs]
 
-        self.bm25 = BM25Okapi(self.corpus)
+        self.bm25 = BM25L(self.corpus)
 
     def search(self, query, top_k=5):
 
-        tokenized_query = query.split()
+        tokenized_query = query.lower().split()
 
         scores = self.bm25.get_scores(tokenized_query)
 

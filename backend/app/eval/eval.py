@@ -8,7 +8,7 @@ import numpy as np
 from ranx import Qrels, Run, evaluate
 from sentence_transformers import SentenceTransformer
 
-from app.search.hybrid import hybrid_ranking
+from backend.app.search.hybrid import hybrid_ranking
 
 def load_queries(queries_path):
     """
