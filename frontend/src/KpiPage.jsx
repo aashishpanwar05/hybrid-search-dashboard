@@ -135,23 +135,3 @@ function KpiPage() {
 }
 
 export default KpiPage;
-          <Line type="monotone" dataKey="latency" stroke="#82ca9d" />
-        </LineChart>
-      </div>
-
-      <div className="chart-container">
-        <h2>Top Queries</h2>
-        <BarChart width={600} height={300} data={topQueriesData}>
-          <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="query" />
-          <YAxis />
-          <Tooltip />
-          <Legend />
-          <Bar dataKey="count" fill="#ffc658" />
-        </BarChart>
-      </div>
-    </div>
-  );
-}
-
-export default KpiPage;
