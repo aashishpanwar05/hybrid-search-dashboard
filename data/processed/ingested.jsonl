@@ -1,0 +1,2 @@
+{"doc_id": "raw_doc1.txt", "title": "doc1", "text": "Artificial intelligence is transforming modern technology.\nMachine learning enables computers to learn from data.", "source": "data/raw/doc1.txt", "created_at": "2026-03-13T15:45:03.748516"}
+{"doc_id": "raw_doc2.txt", "title": "doc2", "text": "Search engines use ranking algorithms like BM25 and vector search.\nHybrid search combines lexical and semantic retrieval.", "source": "data/raw/doc2.txt", "created_at": "2026-03-13T15:45:20.873389"}

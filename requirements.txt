@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+rank-bm25
+sentence-transformers
+faiss-cpu
+numpy
+pandas
+pytest
+pydantic
+scikit-learn
+ranx
